@@ -1,6 +1,8 @@
 use std::{fmt, fs, str, thread};
+mod hashish;
 
-type StatTable<'a> = rustc_hash::FxHashMap<&'a str, Stat>;
+//type StatTable<'a> = rustc_hash::FxHashMap<&'a str, Stat>;
+type StatTable<'a> = hashish::Table<14813, &'a str, Stat>;
 
 #[derive(Debug, Default)]
 struct StatChunk<'a> {
@@ -10,8 +12,11 @@ struct StatChunk<'a> {
 impl<'a> StatChunk<'a> {
     #[inline]
     fn merge_with(&mut self, StatChunk { data }: StatChunk<'a>) {
-        for (city, stat) in &data {
-            self.data.entry(city).or_default().merge_with(&stat);
+        //        for (city, stat) in &data {
+        //            self.data.entry(city).or_default().merge_with(&stat);
+        //        }
+        for (city, stat) in data.iter() {
+            self.data.emplace(&city).merge_with(&stat)
         }
     }
 }
@@ -31,7 +36,7 @@ impl<'a> fmt::Display for StatChunk<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 struct Stat {
     min: f32,
     sum: f32,
@@ -40,6 +45,13 @@ struct Stat {
 }
 
 impl Stat {
+    const X: Self = Self {
+        min: f32::MAX,
+        sum: 0.0,
+        count: 0,
+        max: f32::MIN,
+    };
+
     #[inline]
     fn add(&mut self, x: f32) {
         self.min = if self.min < x { self.min } else { x };
@@ -64,12 +76,14 @@ impl Stat {
 impl Default for Stat {
     #[inline]
     fn default() -> Self {
-        Self {
-            min: f32::MAX,
-            sum: 0.0,
-            count: 0,
-            max: f32::MIN,
-        }
+        //        Self {
+        //            min: f32::MAX,
+        //            sum: 0.0,
+        //            count: 0,
+        //            max: f32::MIN,
+        //        }
+
+        Self::X
     }
 }
 
@@ -81,7 +95,8 @@ impl fmt::Display for Stat {
 
 #[inline]
 fn aggregate_chunk<'a>(chunk: &'a [u8]) -> StatChunk<'a> {
-    let mut stat_map = StatTable::with_capacity_and_hasher(5003, Default::default());
+    //    let mut stat_map = StatTable::with_capacity_and_hasher(5003, Default::default());
+    let mut stat_map = StatTable::new();
     let mut cursor = chunk;
 
     loop {
@@ -93,7 +108,8 @@ fn aggregate_chunk<'a>(chunk: &'a [u8]) -> StatChunk<'a> {
         if city_pos < cursor.len() {
             let city = unsafe { str::from_utf8_unchecked(&cursor[..city_pos]) };
             let (temperature, remains) = parse_temperature(&cursor[(city_pos + 1)..]);
-            stat_map.entry(city).or_default().add(temperature);
+            //            stat_map.entry(city).or_default().add(temperature);
+            stat_map.emplace(city).add(temperature);
             cursor = remains;
         } else {
             break StatChunk { data: stat_map };
