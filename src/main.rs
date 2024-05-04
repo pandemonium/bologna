@@ -45,7 +45,7 @@ struct Stat {
 }
 
 impl Stat {
-    const X: Self = Self {
+    const DEFAULT_INSTANCE: Self = Self {
         min: f32::MAX,
         sum: 0.0,
         count: 0,
@@ -76,20 +76,13 @@ impl Stat {
 impl Default for Stat {
     #[inline]
     fn default() -> Self {
-        //        Self {
-        //            min: f32::MAX,
-        //            sum: 0.0,
-        //            count: 0,
-        //            max: f32::MIN,
-        //        }
-
-        Self::X
+        Self::DEFAULT_INSTANCE
     }
 }
 
 impl fmt::Display for Stat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}/{}/{}", self.min, self.average(), self.max)
+        write!(f, "{}/{:.1}/{}", self.min, self.average(), self.max)
     }
 }
 
@@ -100,7 +93,7 @@ fn aggregate_chunk<'a>(chunk: &'a [u8]) -> StatChunk<'a> {
     let mut cursor = chunk;
 
     loop {
-        let mut city_pos = 0;
+        let mut city_pos = 3;
         while city_pos < cursor.len() && cursor[city_pos] != b';' {
             city_pos += 1
         }
@@ -172,7 +165,7 @@ fn main() {
 
     let stat = thread::scope(|s| {
         let count = thread::available_parallelism().unwrap().get();
-        let chunk_count = count;
+        let chunk_count = count * 3;
 
         chunkify(&data, chunk_count)
             .iter()

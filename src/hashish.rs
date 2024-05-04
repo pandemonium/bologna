@@ -23,7 +23,7 @@ where
     value: B,
 }
 
-impl<const N: usize, A, B> Default for Table<N, A, B> 
+impl<const N: usize, A, B> Default for Table<N, A, B>
 where
     A: Hashed + PartialEq + fmt::Debug + Copy,
     B: Default + fmt::Debug + Copy,
@@ -91,7 +91,7 @@ where
                 }
             } else {
                 index = (index + hash.reverse_bits()) % N;
-             }
+            }
         }
     }
 
@@ -125,7 +125,7 @@ where
                 if k == &key {
                     break &mut self.store[index].value;
                 } else {
-                    self.collisions += 1;
+                    //                    self.collisions += 1;
                     index = (index + hash.reverse_bits()) % N;
                 }
             } else {
@@ -191,11 +191,29 @@ impl<'a> Hashed for &'a str {
         let mut hasher = rustc_hash::FxHasher::default();
         self.hash(&mut hasher);
         hasher.finish() as usize
+
+        //        let mut buf = [0u8; 8];
+        //        let bytes = self.as_bytes();
+        //        let extent = buf.len().min(bytes.len());
+        //        buf[..extent].copy_from_slice(&bytes[..extent]);
+        //
+        //        usize::from_le_bytes(buf)
     }
 }
 
 #[cfg(test)]
 mod test {
+    #[test]
+    fn usize_from_bytes() {
+        let mut buf = [0u8; 8];
+        let bytes = [1u8, 2u8, 3u8, 4u8];
+        let extent = buf.len().min(bytes.len());
+        buf[..extent].copy_from_slice(&bytes[..extent]);
+
+        let word = u64::from_le_bytes(buf);
+        assert_eq!(0x1234, word);
+    }
+
     #[test]
     fn testies() {
         let mut h = super::Table::<419, &str, i32>::new();
@@ -219,7 +237,7 @@ mod test {
         assert_eq!(Some(&39), h.get(&"Sanna Japp"));
 
         for (key, value) in h.iter() {
-            println!("{key} {value}"); 
+            println!("{key} {value}");
         }
     }
 }
